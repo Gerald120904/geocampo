@@ -1,0 +1,3 @@
+class AppStorageService {
+  const AppStorageService();
+}

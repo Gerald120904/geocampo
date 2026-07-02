@@ -1,0 +1,71 @@
+# OS / editors
+.DS_Store
+Thumbs.db
+.idea/
+.vscode/
+*.swp
+
+# Logs and generated local notes
+*.log
+*.out.log
+*.err.log
+contexto*.txt
+contexto*.md
+CONTEXTO*.txt
+CONTEXTO*.md
+extraer_contexto*.ps1
+
+# Python / FastAPI backend
+MapsG/.env
+MapsG/.env.local
+MapsG/.env.production
+MapsG/.env.staging
+MapsG/.venv/
+MapsG/venv/
+MapsG/__pycache__/
+MapsG/**/__pycache__/
+MapsG/*.py[cod]
+MapsG/.pytest_cache/
+MapsG/.mypy_cache/
+MapsG/.ruff_cache/
+MapsG/.coverage
+MapsG/htmlcov/
+MapsG/*.db
+MapsG/test_geocampo.db
+
+# Backend storage: keep folder placeholders only
+MapsG/storage/**
+!MapsG/storage/
+!MapsG/storage/.gitkeep
+!MapsG/storage/originals/
+!MapsG/storage/originals/.gitkeep
+!MapsG/storage/processed/
+!MapsG/storage/processed/.gitkeep
+!MapsG/storage/packages/
+!MapsG/storage/packages/.gitkeep
+!MapsG/storage/temp/
+!MapsG/storage/temp/.gitkeep
+!MapsG/storage/photos/
+!MapsG/storage/photos/.gitkeep
+
+# Flutter frontend
+MapsF/.dart_tool/
+MapsF/.flutter-plugins
+MapsF/.flutter-plugins-dependencies
+MapsF/.pub-cache/
+MapsF/.pub/
+MapsF/build/
+MapsF/coverage/
+MapsF/**/doc/api/
+MapsF/**/ios/Flutter/.last_build_id
+MapsF/android/app/debug/
+MapsF/android/app/profile/
+MapsF/android/app/release/
+MapsF/app.*.symbols
+MapsF/app.*.map.json
+MapsF/*.iml
+
+# Local screenshots / temporary artifacts
+*.tmp
+*.bak
+flutter_*.png

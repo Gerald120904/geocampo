@@ -1,0 +1,9 @@
+{
+  "include": ["app", "tests", "alembic"],
+  "pythonVersion": "3.11",
+  "typeCheckingMode": "basic",
+  "reportMissingImports": false,
+  "reportMissingModuleSource": false,
+  "reportAttributeAccessIssue": false
+}
+

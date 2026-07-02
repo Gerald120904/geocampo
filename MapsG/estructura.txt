@@ -1,0 +1,143 @@
+Listado de rutas de carpetas para el volumen Windows-SSD
+El número de serie del volumen es 0000008F CE60:6B93
+C:.
+|   .env
+|   .env.example
+|   .gitignore
+|   alembic.ini
+|   docker-compose.yml
+|   estructura.txt
+|   pyrightconfig.json
+|   README.md
+|   requirements-dev.txt
+|   requirements.txt
+|   
++---.agents
++---.git
++---alembic
+|   |   env.py
+|   |   script.py.mako
+|   |   
+|   \---versions
+|           20260625_0001_initial.py
+|           
++---app
+|   |   main.py
+|   |   __init__.py
+|   |   
+|   +---api
+|   |   |   __init__.py
+|   |   |   
+|   |   \---routes
+|   |           auth_routes.py
+|   |           company_routes.py
+|   |           health_routes.py
+|   |           map_routes.py
+|   |           observation_routes.py
+|   |           package_routes.py
+|   |           processing_routes.py
+|   |           project_routes.py
+|   |           upload_routes.py
+|   |           user_routes.py
+|   |           __init__.py
+|   |           
+|   +---core
+|   |       config.py
+|   |       database.py
+|   |       exceptions.py
+|   |       ids.py
+|   |       logging.py
+|   |       security.py
+|   |       storage.py
+|   |       __init__.py
+|   |       
+|   +---gis
+|   |       bounds.py
+|   |       detector.py
+|   |       geojson_processor.py
+|   |       geopackage_processor.py
+|   |       geopdf_processor.py
+|   |       geotiff_processor.py
+|   |       mbtiles_builder.py
+|   |       package_builder.py
+|   |       preview_builder.py
+|   |       qgis_processor.py
+|   |       raster_processor.py
+|   |       shapefile_processor.py
+|   |       validation.py
+|   |       vector_processor.py
+|   |       __init__.py
+|   |       
+|   +---models
+|   |       base.py
+|   |       company.py
+|   |       field_observation.py
+|   |       map_file.py
+|   |       map_layer.py
+|   |       map_project.py
+|   |       processing_job.py
+|   |       project.py
+|   |       user.py
+|   |       __init__.py
+|   |       
+|   +---repositories
+|   |       company_repository.py
+|   |       job_repository.py
+|   |       map_repository.py
+|   |       project_repository.py
+|   |       user_repository.py
+|   |       __init__.py
+|   |       
+|   +---schemas
+|   |       auth_schema.py
+|   |       common.py
+|   |       company_schema.py
+|   |       map_schema.py
+|   |       package_schema.py
+|   |       processing_schema.py
+|   |       project_schema.py
+|   |       upload_schema.py
+|   |       user_schema.py
+|   |       __init__.py
+|   |       
+|   +---services
+|   |       access_service.py
+|   |       auth_service.py
+|   |       map_service.py
+|   |       metadata_service.py
+|   |       package_service.py
+|   |       spatial_service.py
+|   |       storage_service.py
+|   |       upload_service.py
+|   |       __init__.py
+|   |       
+|   \---workers
+|           celery_app.py
+|           tasks.py
+|           __init__.py
+|           
++---docker
+|       Dockerfile.api
+|       Dockerfile.worker
+|       
++---storage
+|   |   .gitkeep
+|   |   
+|   +---originals
+|   |       .gitkeep
+|   |       
+|   +---packages
+|   |       .gitkeep
+|   |       
+|   +---processed
+|   |       .gitkeep
+|   |       
+|   \---temp
+|           .gitkeep
+|           
+\---tests
+        conftest.py
+        test_bounds.py
+        test_detector.py
+        test_package.py
+        
