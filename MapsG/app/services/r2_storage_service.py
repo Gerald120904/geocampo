@@ -8,13 +8,16 @@ from app.core.config import settings
 
 class R2StorageService:
     def __init__(self) -> None:
+        if not settings.R2_BUCKET:
+            raise RuntimeError("R2_BUCKET no esta configurado")
+
         self.bucket = settings.R2_BUCKET
         self.client = boto3.client(
             "s3",
             endpoint_url=settings.R2_ENDPOINT,
             aws_access_key_id=settings.R2_ACCESS_KEY_ID,
             aws_secret_access_key=settings.R2_SECRET_ACCESS_KEY,
-            region_name=settings.R2_REGION,
+            region_name=settings.R2_REGION or "auto",
             config=Config(signature_version="s3v4"),
         )
 

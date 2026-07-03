@@ -1,4 +1,5 @@
 from pathlib import Path
+from tempfile import NamedTemporaryFile
 
 from fastapi import APIRouter
 from redis import Redis
@@ -8,6 +9,7 @@ from sqlalchemy.orm import Session
 from app.core.config import settings
 from app.core.database import get_db
 from fastapi import Depends
+from app.services.r2_storage_service import R2StorageService
 
 router = APIRouter(tags=["health"])
 
@@ -29,6 +31,39 @@ def health_storage() -> dict[str, str]:
     if missing:
         return {"status": "error", "storage": "missing", "paths": ",".join(missing)}
     return {"status": "ok", "storage": "available"}
+
+
+@router.get("/health/r2")
+def health_r2() -> dict[str, str]:
+    if settings.STORAGE_BACKEND != "r2":
+        return {
+            "status": "skipped",
+            "storage_backend": settings.STORAGE_BACKEND,
+        }
+
+    r2 = R2StorageService()
+    key = "health/render-r2-test.txt"
+
+    with NamedTemporaryFile("w", delete=False) as temp_file:
+        temp_file.write("GeoCampo R2 OK")
+        temp_path = Path(temp_file.name)
+
+    try:
+        r2.upload_file(
+            temp_path,
+            key,
+            content_type="text/plain",
+        )
+        url = r2.presigned_get_url(key, expires_seconds=300)
+
+        return {
+            "status": "ok",
+            "bucket": settings.R2_BUCKET,
+            "key": key,
+            "download_url": url,
+        }
+    finally:
+        temp_path.unlink(missing_ok=True)
 
 
 @router.get("/health/redis")
