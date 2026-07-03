@@ -421,7 +421,7 @@ def resolve_duplicate(
     return Message(message="Decision aplicada correctamente")
 
 
-def _download(path_value: str | None, media_type: str, filename: str | None = None) -> FileResponse | RedirectResponse:
+def _download(path_value: str | None, media_type: str, filename: str | None = None) -> Response:
     signed_url = presigned_get_url(path_value)
     if signed_url:
         return RedirectResponse(signed_url, status_code=302)
@@ -450,12 +450,12 @@ def package_info(
     )
 
 
-@router.get("/{map_id}/package")
+@router.get("/{map_id}/package", response_model=None)
 def download_package(
     map_id: str,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
-) -> FileResponse | RedirectResponse:
+) -> Response:
     map_project = get_map_for_user(db, map_id, user)
     if map_project.status != "ready":
         raise GeoCampoError("PACKAGE_NOT_READY", "El paquete todavía no está listo.", 409)
@@ -479,12 +479,12 @@ def package_download_url(
     return {"download_url": f"/api/maps/{map_project.id}/package"}
 
 
-@router.get("/{map_id}/preview")
+@router.get("/{map_id}/preview", response_model=None)
 def download_preview(
     map_id: str,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
-) -> FileResponse | RedirectResponse:
+) -> Response:
     map_project = get_map_for_user(db, map_id, user)
     if map_project.preview_file_path:
         return _download(map_project.preview_file_path, "image/png")
@@ -497,12 +497,12 @@ def download_preview(
     return _download(map_project.preview_file_path, "image/png")
 
 
-@router.get("/{map_id}/raw-pdf")
+@router.get("/{map_id}/raw-pdf", response_model=None)
 def raw_pdf(
     map_id: str,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
-) -> FileResponse | RedirectResponse:
+) -> Response:
     map_project = get_map_for_user(db, map_id, user)
     if map_project.source_type != "geopdf":
         raise GeoCampoError("RAW_PDF_ONLY_GEOPDF", "Este archivo no es un GeoPDF.", 422)
