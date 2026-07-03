@@ -269,7 +269,13 @@ def prepare_raw_geopdf_view(db: Session, map_id: str) -> MapProject:
     map_project.status = MAP_STATUS_RAW_READY
     map_project.processing_message = "PDF original montado con georreferencia"
     map_project.raw_view_ready_at = datetime.now(UTC)
-    map_project.active_view_mode = "raw"
+    if map_project.quick_mbtiles_file_path:
+        map_project.active_view_mode = "quick"
+    elif settings.APP_ENV == "production":
+        map_project.active_view_mode = "quick"
+        map_project.processing_message = "Generando vista rapida del mapa"
+    else:
+        map_project.active_view_mode = "raw"
     db.commit()
     db.refresh(map_project)
     return map_project
