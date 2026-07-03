@@ -8,6 +8,7 @@ from fastapi.responses import FileResponse, RedirectResponse, Response
 from kombu.exceptions import OperationalError
 from sqlalchemy.orm import Session
 
+from app.core.config import settings
 from app.core.database import SessionLocal, get_db
 from app.core.exceptions import GeoCampoError
 from app.core.statuses import (
@@ -577,7 +578,7 @@ def raw_pdf_tile(
     y: int,
     db: Session = Depends(get_db),
     user: User = Depends(get_current_user),
-) -> FileResponse:
+) -> Response:
     map_project = get_map_for_user(db, map_id, user)
     if map_project.source_type != "geopdf":
         raise GeoCampoError(
@@ -598,12 +599,29 @@ def raw_pdf_tile(
             409,
         )
 
-    tile_path = get_or_create_raw_pdf_tile(
-        map_project=map_project,
-        z=z,
-        x=x,
-        y=y,
+    mbtiles_path = (
+        _selected_mbtiles_path(map_project, "quick")
+        or _selected_mbtiles_path(map_project, "optimized")
+        or _selected_mbtiles_path(map_project, "auto")
     )
+
+    if mbtiles_path:
+        return _tile_response_from_mbtiles(
+            mbtiles_path=mbtiles_path,
+            z=z,
+            x=x,
+            y=y,
+            private_cache=True,
+        )
+
+    if settings.APP_ENV == "production":
+        return Response(
+            content=TRANSPARENT_PNG,
+            media_type="image/png",
+            headers={"Cache-Control": "private, max-age=60"},
+        )
+
+    tile_path = get_or_create_raw_pdf_tile(map_project=map_project, z=z, x=x, y=y)
     return FileResponse(
         tile_path,
         media_type="image/png",
@@ -626,10 +644,22 @@ def raster_tile(
     if not mbtiles_path:
         raise GeoCampoError("MBTILES_NOT_FOUND", "El mapa no tiene tiles disponibles.", 404)
 
+    return _tile_response_from_mbtiles(mbtiles_path=mbtiles_path, z=z, x=x, y=y)
+
+
+def _tile_response_from_mbtiles(
+    *,
+    mbtiles_path: Path,
+    z: int,
+    x: int,
+    y: int,
+    private_cache: bool = False,
+) -> Response:
     try:
         with sqlite3.connect(f"file:{mbtiles_path.resolve()}?mode=ro", uri=True) as connection:
             metadata = dict(connection.execute("SELECT name, value FROM metadata").fetchall())
             tile_rows = _candidate_tile_rows(z, y, metadata.get("scheme"))
+
             row = None
             for tile_row in tile_rows:
                 row = connection.execute(
@@ -645,7 +675,11 @@ def raster_tile(
     except sqlite3.Error as exc:
         raise GeoCampoError("MBTILES_INVALID", "No se pudo leer el MBTiles del mapa.", 500) from exc
 
-    cache_headers = {"Cache-Control": "public, max-age=31536000, immutable"}
+    if private_cache:
+        cache_headers = {"Cache-Control": "private, max-age=86400"}
+    else:
+        cache_headers = {"Cache-Control": "public, max-age=31536000, immutable"}
+
     if not row:
         return Response(content=TRANSPARENT_PNG, media_type="image/png", headers=cache_headers)
 
