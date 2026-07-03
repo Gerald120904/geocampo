@@ -45,6 +45,8 @@ class Settings(BaseSettings):
     SMTP_FROM_EMAIL: str = "geocampo.app@gmail.com"
     SMTP_FROM_NAME: str = "GeoCampo"
     SMTP_USE_TLS: bool = True
+    EMAIL_PROVIDER: str = "smtp"
+    RESEND_API_KEY: str = ""
     MAX_UPLOAD_SIZE_MB: int = 500
     CORS_ORIGINS: str = ""
     DEFAULT_MAP_MIN_ZOOM: int = 8

@@ -25,3 +25,4 @@ email-validator>=2.2,<3
 pypdf>=5,<7
 pymupdf>=1.24,<2
 boto3>=1.35,<2
+requests<3,>=2.32

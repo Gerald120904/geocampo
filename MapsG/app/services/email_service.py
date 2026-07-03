@@ -3,6 +3,8 @@ import smtplib
 from email.message import EmailMessage
 from html import escape
 
+import requests
+
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -58,18 +60,39 @@ def _build_code_email_html(user_name: str, code: str, title: str, intro: str) ->
 </html>"""
 
 
-def _send_email(to_email: str, subject: str, text_body: str, html_body: str) -> None:
+def _send_email(to_email: str, subject: str, text_body: str, html_body: str | None = None) -> None:
+    if getattr(settings, "EMAIL_PROVIDER", "smtp").lower() == "resend":
+        response = requests.post(
+            "https://api.resend.com/emails",
+            headers={
+                "Authorization": f"Bearer {settings.RESEND_API_KEY}",
+                "Content-Type": "application/json",
+            },
+            json={
+                "from": f"{settings.SMTP_FROM_NAME} <{settings.SMTP_FROM_EMAIL}>",
+                "to": [to_email],
+                "subject": subject,
+                "text": text_body,
+                "html": html_body or text_body,
+            },
+            timeout=10,
+        )
+        if response.status_code >= 400:
+            raise RuntimeError(f"Resend email error: {response.status_code} {response.text}")
+        return
+
     message = EmailMessage()
     message["From"] = f"{settings.SMTP_FROM_NAME} <{settings.SMTP_FROM_EMAIL}>"
     message["To"] = to_email
     message["Subject"] = subject
     message.set_content(text_body)
-    message.add_alternative(html_body, subtype="html")
+    if html_body:
+        message.add_alternative(html_body, subtype="html")
     try:
         with smtplib.SMTP(settings.SMTP_HOST, settings.SMTP_PORT, timeout=10) as smtp:
             if settings.SMTP_USE_TLS:
                 smtp.starttls()
-            if settings.SMTP_USERNAME:
+            if settings.SMTP_USERNAME and settings.SMTP_PASSWORD:
                 smtp.login(settings.SMTP_USERNAME, settings.SMTP_PASSWORD)
             smtp.send_message(message)
     except (OSError, smtplib.SMTPException):
