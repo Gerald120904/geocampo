@@ -60,8 +60,45 @@ def _build_code_email_html(user_name: str, code: str, title: str, intro: str) ->
 </html>"""
 
 
+def _mail_from_email() -> str:
+    return settings.MAIL_FROM_EMAIL or settings.SMTP_FROM_EMAIL
+
+
+def _mail_from_name() -> str:
+    return settings.MAIL_FROM_NAME or settings.SMTP_FROM_NAME
+
+
+def _mail_from_header() -> str:
+    return f"{_mail_from_name()} <{_mail_from_email()}>"
+
+
+def _send_email_brevo(to_email: str, subject: str, text_body: str, html_body: str | None = None) -> None:
+    response = requests.post(
+        "https://api.brevo.com/v3/smtp/email",
+        headers={
+            "api-key": settings.BREVO_API_KEY,
+            "Content-Type": "application/json",
+        },
+        json={
+            "sender": {"name": _mail_from_name(), "email": _mail_from_email()},
+            "to": [{"email": to_email}],
+            "subject": subject,
+            "textContent": text_body,
+            "htmlContent": html_body or text_body,
+        },
+        timeout=10,
+    )
+    if response.status_code >= 400:
+        raise RuntimeError(f"Brevo email error: {response.status_code} {response.text}")
+
+
 def _send_email(to_email: str, subject: str, text_body: str, html_body: str | None = None) -> None:
-    if getattr(settings, "EMAIL_PROVIDER", "smtp").lower() == "resend":
+    provider = getattr(settings, "EMAIL_PROVIDER", "smtp").lower()
+    if provider == "brevo":
+        _send_email_brevo(to_email, subject, text_body, html_body)
+        return
+
+    if provider == "resend":
         response = requests.post(
             "https://api.resend.com/emails",
             headers={
@@ -69,7 +106,7 @@ def _send_email(to_email: str, subject: str, text_body: str, html_body: str | No
                 "Content-Type": "application/json",
             },
             json={
-                "from": f"{settings.SMTP_FROM_NAME} <{settings.SMTP_FROM_EMAIL}>",
+                "from": _mail_from_header(),
                 "to": [to_email],
                 "subject": subject,
                 "text": text_body,
@@ -82,7 +119,7 @@ def _send_email(to_email: str, subject: str, text_body: str, html_body: str | No
         return
 
     message = EmailMessage()
-    message["From"] = f"{settings.SMTP_FROM_NAME} <{settings.SMTP_FROM_EMAIL}>"
+    message["From"] = _mail_from_header()
     message["To"] = to_email
     message["Subject"] = subject
     message.set_content(text_body)

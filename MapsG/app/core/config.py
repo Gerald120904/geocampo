@@ -47,6 +47,9 @@ class Settings(BaseSettings):
     SMTP_USE_TLS: bool = True
     EMAIL_PROVIDER: str = "smtp"
     RESEND_API_KEY: str = ""
+    BREVO_API_KEY: str = ""
+    MAIL_FROM_EMAIL: str = ""
+    MAIL_FROM_NAME: str = ""
     MAX_UPLOAD_SIZE_MB: int = 500
     CORS_ORIGINS: str = ""
     DEFAULT_MAP_MIN_ZOOM: int = 8
