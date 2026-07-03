@@ -154,7 +154,7 @@ class _UploadMapScreenState extends ConsumerState<UploadMapScreen> {
             ? null
             : descriptionController.text.trim(),
         file: file,
-        processingMode: selectedFileIsPdf ? 'raw' : 'optimized',
+        processingMode: selectedFileIsPdf ? 'quick' : 'optimized',
         onProgress: (sent, total) {
           if (!mounted || total <= 0) return;
           setState(() => uploadProgress = sent / total);

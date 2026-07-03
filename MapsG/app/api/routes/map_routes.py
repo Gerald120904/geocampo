@@ -203,9 +203,9 @@ async def upload_map(
     project = get_project_for_user(db, project_id, user)
     map_project = await save_upload(db, project, user, name, description, file)
     if auto_process:
-        if processing_mode == "raw" and map_project.source_type == "geopdf":
-            map_project = prepare_raw_geopdf_view(db, map_project.id)
-        elif processing_mode == "quick" and map_project.source_type == "geopdf":
+        if map_project.source_type == "geopdf" and processing_mode in {"raw", "quick"}:
+            if processing_mode == "raw":
+                map_project = prepare_raw_geopdf_view(db, map_project.id)
             _enqueue_quick_view(db, map_project.id, background_tasks)
             db.refresh(map_project)
         else:
