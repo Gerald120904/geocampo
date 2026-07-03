@@ -42,6 +42,7 @@ from app.services.map_duplicate_service import (
 )
 from app.services.metadata_service import build_metadata, metadata_layer
 from app.services.package_service import build_package, copy_original, file_sha256, write_json
+from app.services.r2_storage_service import R2StorageService, is_r2_enabled, r2_key_for_map_file
 from app.services.storage_service import (
     make_directory,
     is_r2_uri,
@@ -615,11 +616,21 @@ def process_map(db: Session, map_id: str, job_id: str) -> None:
             "",
         )
         uploaded_paths = upload_directory(package_root, processed_key_prefix)
-        package_stored_path = upload_permanent_file(
-            package_path,
-            permanent_key("packages", company_id, map_project.project_id, map_project.id, package_path.name),
-            content_type="application/zip",
-        )
+        if is_r2_enabled():
+            package_stored_path = r2_key_for_map_file(
+                kind="packages",
+                company_id=company_id,
+                project_id=map_project.project_id,
+                map_id=map_project.id,
+                filename=package_path.name,
+            )
+            R2StorageService().upload_file(
+                local_path=package_path,
+                key=package_stored_path,
+                content_type="application/zip",
+            )
+        else:
+            package_stored_path = str(package_path)
 
         def stored_path(path: Path) -> str:
             return uploaded_paths.get(path.resolve(), str(path))

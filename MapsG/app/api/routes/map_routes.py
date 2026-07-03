@@ -47,10 +47,13 @@ from app.services.access_service import get_map_for_user, get_project_for_user
 from app.services.auth_service import get_current_user, require_roles
 from app.services.map_service import create_quick_geopdf_view, prepare_raw_geopdf_view, process_map
 from app.services.map_duplicate_service import find_duplicates
+from app.services.r2_storage_service import R2StorageService, is_r2_enabled
 from app.services.storage_service import (
+    is_r2_uri,
     join_storage_uri,
     materialize_file,
     presigned_get_url,
+    r2_key,
     stored_file_available,
     stored_filename,
 )
@@ -432,6 +435,20 @@ def _download(path_value: str | None, media_type: str, filename: str | None = No
     return FileResponse(path, media_type=media_type, filename=filename or path.name)
 
 
+def _package_is_r2_key(path_value: str | None) -> bool:
+    if not path_value:
+        return False
+    if is_r2_uri(path_value):
+        return True
+    return is_r2_enabled() and not Path(path_value).is_absolute()
+
+
+def _package_key(path_value: str) -> str:
+    if is_r2_uri(path_value):
+        return r2_key(path_value)
+    return path_value
+
+
 @router.get("/{map_id}/package/info", response_model=PackageInfo)
 def package_info(
     map_id: str,
@@ -441,7 +458,13 @@ def package_info(
     map_project = get_map_for_user(db, map_id, user)
     return PackageInfo(
         map_id=map_project.id,
-        available=bool(stored_file_available(map_project.package_file_path) and map_project.status == "ready"),
+        available=bool(
+            map_project.status == "ready"
+            and (
+                _package_is_r2_key(map_project.package_file_path)
+                or stored_file_available(map_project.package_file_path)
+            )
+        ),
         filename=stored_filename(map_project.package_file_path),
         size_bytes=map_project.package_size_bytes,
         checksum_sha256=map_project.package_checksum_sha256,
@@ -459,7 +482,24 @@ def download_package(
     map_project = get_map_for_user(db, map_id, user)
     if map_project.status != "ready":
         raise GeoCampoError("PACKAGE_NOT_READY", "El paquete todavía no está listo.", 409)
-    return _download(map_project.package_file_path, "application/zip")
+    if not map_project.package_file_path:
+        raise GeoCampoError("PACKAGE_NOT_FOUND", "El paquete no esta disponible para este mapa.", 404)
+
+    if _package_is_r2_key(map_project.package_file_path):
+        signed_url = R2StorageService().presigned_get_url(
+            _package_key(map_project.package_file_path),
+            expires_seconds=3600,
+        )
+        return RedirectResponse(url=signed_url, status_code=302)
+
+    package_path = Path(map_project.package_file_path)
+    if not package_path.is_file():
+        raise GeoCampoError("PACKAGE_NOT_FOUND", "El paquete no existe en el servidor.", 404)
+    return FileResponse(
+        package_path,
+        filename=package_path.name,
+        media_type="application/zip",
+    )
 
 
 @router.get("/{map_id}/package/download-url", response_model=dict[str, str])
@@ -472,9 +512,16 @@ def package_download_url(
     if map_project.status != "ready":
         raise GeoCampoError("PACKAGE_NOT_READY", "El paquete todavÃ­a no estÃ¡ listo.", 409)
 
-    signed_url = presigned_get_url(map_project.package_file_path)
-    if signed_url:
-        return {"download_url": signed_url}
+    if not map_project.package_file_path:
+        raise GeoCampoError("PACKAGE_NOT_FOUND", "El paquete no esta disponible para este mapa.", 404)
+
+    if _package_is_r2_key(map_project.package_file_path):
+        return {
+            "download_url": R2StorageService().presigned_get_url(
+                _package_key(map_project.package_file_path),
+                expires_seconds=3600,
+            )
+        }
 
     return {"download_url": f"/api/maps/{map_project.id}/package"}
 

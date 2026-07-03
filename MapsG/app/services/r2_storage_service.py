@@ -61,3 +61,35 @@ class R2StorageService:
             },
             ExpiresIn=expires_seconds,
         )
+
+
+def is_r2_enabled() -> bool:
+    return settings.STORAGE_BACKEND.lower() == "r2"
+
+
+def _with_prefix(prefix: str, value: str) -> str:
+    clean_value = str(value).strip("/\\")
+    expected_prefix = f"{prefix}_"
+    if clean_value.startswith(expected_prefix):
+        return clean_value
+    return f"{expected_prefix}{clean_value}"
+
+
+def _clean_key_part(value: str) -> str:
+    return str(value).strip("/\\")
+
+
+def r2_key_for_map_file(
+    kind: str,
+    company_id: str,
+    project_id: str,
+    map_id: str,
+    filename: str,
+) -> str:
+    return (
+        f"{_clean_key_part(kind)}/"
+        f"{_with_prefix('company', company_id)}/"
+        f"{_with_prefix('project', project_id)}/"
+        f"{_with_prefix('map', map_id)}/"
+        f"{_clean_key_part(filename)}"
+    )
