@@ -334,13 +334,16 @@ class _RemoteMapContent extends StatelessWidget {
         ? null
         : pointInPolygon(point, footprintPoints);
     final version = Uri.encodeComponent(detail.tileVersion ?? detail.status);
-    final view = detail.viewMode == 'quick' ? 'quick' : 'optimized';
-    final rawTileUrl =
-        '${AppConstants.apiUrl}/maps/${detail.id}/raw-tiles/{z}/{x}/{y}.png?'
-        'access_token=${Uri.encodeComponent(token)}&v=$version';
-    final tileUrl =
-        '${AppConstants.apiUrl}/maps/${detail.id}/tiles/{z}/{x}/{y}.png?'
-        'view=$view&access_token=${Uri.encodeComponent(token)}&v=$version';
+    final String? view = detail.optimizedAvailable
+        ? 'optimized'
+        : detail.quickAvailable
+        ? 'quick'
+        : null;
+    final canShowRaster = view != null;
+    final tileUrl = canShowRaster
+        ? '${AppConstants.apiUrl}/maps/${detail.id}/tiles/{z}/{x}/{y}.png?'
+              'view=$view&access_token=${Uri.encodeComponent(token)}&v=$version'
+        : '';
     final minZoom = detail.minZoom.toDouble();
     final maxZoom = _visualMaxZoom(detail.maxZoom);
     final defaultZoom = detail.defaultZoom
@@ -367,19 +370,7 @@ class _RemoteMapContent extends StatelessWidget {
               keepBuffer: 1,
               panBuffer: 0,
             ),
-            if (detail.viewMode == 'raw')
-              TileLayer(
-                urlTemplate: rawTileUrl,
-                minNativeZoom: detail.minZoom,
-                maxNativeZoom: detail.maxZoom,
-                maxZoom: maxZoom,
-                tileBounds: tileBounds,
-                keepBuffer: 0,
-                panBuffer: 0,
-                retinaMode: false,
-                userAgentPackageName: 'com.geocampo.geocampo_app',
-              ),
-            if (detail.viewMode != 'raw')
+            if (canShowRaster)
               TileLayer(
                 urlTemplate: tileUrl,
                 minNativeZoom: detail.minZoom,
@@ -392,7 +383,7 @@ class _RemoteMapContent extends StatelessWidget {
                 userAgentPackageName: 'com.geocampo.geocampo_app',
               ),
             if (showRoadReference) _RoadReferenceLayer(tileBounds: tileBounds),
-            if (detail.viewMode != 'raw' && footprintPoints.length >= 3)
+            if (canShowRaster && footprintPoints.length >= 3)
               PolygonLayer(
                 polygons: [
                   Polygon(
@@ -420,6 +411,34 @@ class _RemoteMapContent extends StatelessWidget {
               ),
           ],
         ),
+        if (!canShowRaster)
+          Positioned(
+            left: 16,
+            right: 16,
+            bottom: 24,
+            child: Container(
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: const Color(0xFF16351F).withValues(alpha: 0.92),
+                borderRadius: BorderRadius.circular(18),
+                boxShadow: const [
+                  BoxShadow(
+                    blurRadius: 20,
+                    offset: Offset(0, 8),
+                    color: Color(0x33000000),
+                  ),
+                ],
+              ),
+              child: const Text(
+                'Generando vista del mapa. Espera unos segundos y vuelve a actualizar.',
+                textAlign: TextAlign.center,
+                style: TextStyle(
+                  color: Colors.white,
+                  fontWeight: FontWeight.w700,
+                ),
+              ),
+            ),
+          ),
         Positioned(
           left: 12,
           right: 12,
